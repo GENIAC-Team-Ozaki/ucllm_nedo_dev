@@ -12,6 +12,7 @@ echo ""
 
 # Initializes the arguments.
 input_tokenizer_file=""
+input_data_path=""
 output_model_dir=""
 save_interval=1000
 wandb_entity=""
@@ -22,6 +23,7 @@ while [[ ${#} -gt 0 ]]; do
     case ${1} in
         # Shifts twice for option that takes an argument.
         --input_tokenizer_file) input_tokenizer_file=${2}; shift ;;
+        --input_data_path) input_data_path=${2}; shift ;;
         --output_model_dir) output_model_dir=${2}; shift ;;
         --save_interval) save_interval=${2}; shift ;;
         --wandb_entity) wandb_entity=${2}; shift ;;
@@ -33,9 +35,9 @@ while [[ ${#} -gt 0 ]]; do
 done
 
 # Checks the required arguments.
-if [[ -z ${input_tokenizer_file} ]] || [[ -z ${output_model_dir} ]] || [[ -z ${save_interval} ]] || [[ -z ${wandb_entity} ]] || [[ -z ${wandb_project} ]]; then
+if [[ -z ${input_tokenizer_file} ]] || [[ -z ${input_data_path} ]] || [[ -z ${output_model_dir} ]] || [[ -z ${save_interval} ]] || [[ -z ${wandb_entity} ]] || [[ -z ${wandb_project} ]]; then
     echo "Error: Missing required arguments."
-    echo "Usage: ${0} --input_tokenizer_file <input_tokenizer_file> --output_model_dir <output_model_dir> --save_interval <save_interval> --wandb_entity <wandb_entity> --wandb_project <wandb_project>"
+    echo "Usage: ${0} --input_tokenizer_file <input_tokenizer_file> --input_data_path <input_data_path> --output_model_dir <output_model_dir> --save_interval <save_interval> --wandb_entity <wandb_entity> --wandb_project <wandb_project>"
     exit 1
 fi
 
@@ -44,6 +46,7 @@ output_model_dir="${output_model_dir%/}"  # Removes a trailing slash "/" if it e
 
 # Prints the arguments.
 echo "input_tokenizer_file = ${input_tokenizer_file}"
+echo "input_data_path = ${input_data_path}"
 echo "output_model_dir = ${output_model_dir}"
 echo "save_interval = ${save_interval}"
 echo "wandb_entity = ${wandb_entity}"
@@ -241,17 +244,14 @@ num_workers=0
 
 # If either arxiv_text_document.bin or arxiv_text_document.idx doesn't exist yet,
 # then downloads arxiv.jsonl and preprocesses the data.
-data_path="${megatron_deepspeed_dir}/dataset/arxiv_text_document"
+data_path="${input_data_path}_text_document"
 if [ ! -f "${data_path}.bin" ] || [ ! -f "${data_path}.idx" ]; then
     echo "Either ${data_path}.bin or ${data_path}.idx doesn't exist yet, so download arxiv.jsonl and preprocess the data."
-    wget https://data.together.xyz/redpajama-data-1T/v1.0.0/arxiv/arxiv_024de5df-1b7f-447c-8c3a-51407d8d6732.jsonl \
-        --directory-prefix ${megatron_deepspeed_dir}/dataset/
-    mv ${megatron_deepspeed_dir}/dataset/arxiv_024de5df-1b7f-447c-8c3a-51407d8d6732.jsonl ${megatron_deepspeed_dir}/dataset/arxiv.jsonl
     python ${megatron_deepspeed_dir}/tools/preprocess_data.py \
         --tokenizer-type SentencePieceTokenizer \
         --tokenizer-model ${input_tokenizer_file} \
-        --input ${megatron_deepspeed_dir}/dataset/arxiv.jsonl \
-        --output-prefix ${megatron_deepspeed_dir}/dataset/arxiv \
+        --input ${input_data_path}.jsonl \
+        --output-prefix ${input_data_path} \
         --dataset-impl mmap \
         --workers $(grep -c ^processor /proc/cpuinfo) \
         --append-eod
@@ -260,8 +260,10 @@ else
 fi
 echo ""
 
+input_data_name=$(basename "${input_data_path}")
+
 prescale_grad="true"
-jobname="gpt_${model_size}B_tok${train_tokens_in_billion}B"
+jobname="gpt_${model_size}B_tok${train_tokens_in_billion}B_${input_data_name}"
 jobname="${jobname}_lr${lr}_min${min_lr}_w${lr_warmup_tokens_in_million}M_d${lr_decay_tokens_in_billion}B_${lr_decay_style}"
 jobname="${jobname}_gbs${global_batch_size}_mbs${batch_size}_g${num_gpus}"
 if [[ $zero_stage -gt 0 ]]; then
