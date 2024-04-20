@@ -326,7 +326,16 @@ megatron_options=" \
     --clip-grad 1.0 \
     --hysteresis 2 \
     --num-workers ${num_workers} \
-    --fp16 \
+    --bf16 \
+    --no-query-key-layer-scaling \
+    --attention-dropout 0 \
+    --hidden-dropout 0 \
+    --use-rotary-position-embeddings \
+    --untie-embeddings-and-output-weights \
+    --swiglu \
+    --normalization rmsnorm \
+    --disable-bias-linear \
+    --num-key-value-heads 4 \
     --seed ${seed} \
     --load ${checkpoint_path} \
     --save ${checkpoint_path} \
