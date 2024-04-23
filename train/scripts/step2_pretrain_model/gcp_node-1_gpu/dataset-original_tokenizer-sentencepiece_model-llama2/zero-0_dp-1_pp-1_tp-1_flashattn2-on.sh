@@ -23,8 +23,8 @@ while [[ ${#} -gt 0 ]]; do
     case ${1} in
         # Shifts twice for option that takes an argument.
         --input_tokenizer_file) input_tokenizer_file=${2}; shift ;;
-        --input_data_path) input_data_path=${2}; shift ;;
-        --output_model_dir) output_model_dir=${2}; shift ;;
+	--input_data_path) input_data_path=${2}; shift ;;
+	--output_model_dir) output_model_dir=${2}; shift ;;
         --save_interval) save_interval=${2}; shift ;;
         --wandb_entity) wandb_entity=${2}; shift ;;
         --wandb_project) wandb_project=${2}; shift ;;
@@ -70,14 +70,14 @@ seq_len=2048
 ## provide better zero-shot eval results.
 
 ## GPT-3 Small 125M
-#model_size=0.125
-#num_layers=12
-#hidden_size=768
-#num_attn_heads=12
-#global_batch_size=256
-#lr=6.0e-4
-#min_lr=1.0e-6
-#init_std=0.02
+model_size=0.125
+num_layers=12
+hidden_size=768
+num_attn_heads=12
+global_batch_size=256
+lr=6.0e-4
+min_lr=1.0e-6
+init_std=0.02
 
 ## GPT-3 Medium 350M
 # model_size=0.35
@@ -120,14 +120,14 @@ seq_len=2048
 # init_std=0.011
 
 ## GPT-3 6.7B
-#model_size=6.7
-#num_layers=32
-#hidden_size=4096
-#num_attn_heads=32
-#global_batch_size=1024
-#lr=1.2e-4
-#min_lr=1.0e-6
-#init_std=0.009
+# model_size=6.7
+# num_layers=32
+# hidden_size=4096
+# num_attn_heads=32
+# global_batch_size=1024
+# lr=1.2e-4
+# min_lr=1.0e-6
+# init_std=0.009
 
 ## GPT-3 13B
 # model_size=13
@@ -148,18 +148,6 @@ seq_len=2048
 # lr=0.6e-4
 # min_lr=1.0e-6
 # init_std=0.005
-
-## LLama2
-model_size=7
-num_layers=32
-hidden_size=4096
-ffn_hidden_size=11008
-num_attn_heads=32
-global_batch_size=1024
-lr=3e-4
-min_lr=3e-5
-init_std=0.009
-
 ###############################################################################
 ### Training duration configs
 ## The main termination condition, original GPT-3 paper trains for 300B tokens.
@@ -213,7 +201,7 @@ pp_size=1
 no_pp="false"
 
 ## ZeRO-based data parallelism, stage=0 will disable ZeRO
-zero_stage=1
+zero_stage=0
 
 ## Total number of GPUs.
 num_gpus_pernode=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
@@ -264,15 +252,13 @@ if [ ! -f "${data_path}.bin" ] || [ ! -f "${data_path}.idx" ]; then
         --tokenizer-model ${input_tokenizer_file} \
         --input ${input_data_path}.jsonl \
         --output-prefix ${input_data_path} \
-        --dataset-impl mmap \
+	--dataset-impl mmap \
         --workers $(grep -c ^processor /proc/cpuinfo) \
         --append-eod
 else
     echo "Both ${data_path}.bin and ${data_path}.idx already exist."
 fi
 echo ""
-
-input_data_name=$(basename "${input_data_path}")
 
 prescale_grad="true"
 jobname="gpt_${model_size}B_tok${train_tokens_in_billion}B_${input_data_name}"
@@ -321,7 +307,6 @@ megatron_options=" \
     --global-batch-size ${global_batch_size} \
     --num-layers ${num_layers} \
     --hidden-size ${hidden_size} \
-    --ffn-hidden-size ${ffn_hidden_size} \
     --num-attention-heads ${num_attn_heads} \
     --seq-length ${seq_len} \
     --max-position-embeddings ${seq_len} \
@@ -423,25 +408,7 @@ wandb_options=" \
     --wandb_project ${wandb_project} \
     --wandb_group pretrain_gpt_${model_size}B_${host}_${current_time}"
 
-# Creates a hostfile.
-script_dir=$(dirname "$0")
-hostfile="${script_dir}/hostfile_jobid-${SLURM_JOB_ID}"
-nodes=$(scontrol show hostnames $SLURM_JOB_NODELIST)
-
-for node in $nodes
-do
-  gpu_count=$(ssh ${node} "nvidia-smi --query-gpu=name --format=csv,noheader | wc -l")
-  echo "${node} slots=${gpu_count}"
-  ssh $node "source ~/.bashrc"
-  ssh $node 'source ~/miniconda3/etc/profile.d/conda.sh && conda activate .venv_train'
-done > "${hostfile}"
-
-echo "hostfile = ${hostfile}"
-cat ${hostfile}
-echo ""
-
-deepspeed --hostfile ${hostfile} \
-    ${megatron_deepspeed_dir}/pretrain_gpt.py \
+deepspeed ${megatron_deepspeed_dir}/pretrain_gpt.py \
     ${megatron_options} \
     ${data_options} \
     ${deepspeed_options} \
