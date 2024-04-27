@@ -394,19 +394,29 @@ if __name__ == "__main__":
 
     print(model)
 
-    tokens = torch.tensor([[    1, 20811,   349,   396, 13126,   369, 13966,   264]], device=torch.cuda.current_device())
+    # Prepare input tensors and pad them for the size of 2048.
+    tokens = torch.tensor([[1, 20811, 349, 396, 13126, 369, 13966, 264]], device=torch.cuda.current_device())
+    tokens = torch.nn.functional.pad(tokens, (0, 2040), value=0)
+    
     position_ids = torch.tensor([[0, 1, 2, 3, 4, 5, 6, 7]], device=torch.cuda.current_device())
+    position_ids = torch.nn.functional.pad(position_ids, (0, 2040), value=0)
+    
     loss_mask = torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1]], device=torch.cuda.current_device())
-    attention_mask = torch.tensor([[[[False,  True,  True,  True,  True,  True,  True,  True],
-              [False, False,  True,  True,  True,  True,  True,  True],
-              [False, False, False,  True,  True,  True,  True,  True],
-              [False, False, False, False,  True,  True,  True,  True],
-              [False, False, False, False, False,  True,  True,  True],
-              [False, False, False, False, False, False,  True,  True],
-              [False, False, False, False, False, False, False,  True],
-              [False, False, False, False, False, False, False, False]]]], device=torch.cuda.current_device())
+    loss_mask = torch.nn.functional.pad(loss_mask, (0, 2040), value=0)
+    
+    attention_mask = torch.tensor([[[[False, True, True, True, True, True, True, True],
+                                     [False, False, True, True, True, True, True, True],
+                                     [False, False, False, True, True, True, True, True],
+                                     [False, False, False, False, True, True, True, True],
+                                     [False, False, False, False, False, True, True, True],
+                                     [False, False, False, False, False, False, True, True],
+                                     [False, False, False, False, False, False, False, True],
+                                     [False, False, False, False, False, False, False, False]]]], device=torch.cuda.current_device())
+    attention_mask = torch.nn.functional.pad(attention_mask, (0, 2040, 0, 0), value=False)
+    
     #labels = torch.tensor([[32000, 32000, 32000, 32000, 32000, 32000, 32000, 32000]], device=torch.cuda.current_device())
     labels = torch.tensor([[20896, 26570, 20896, 21876, 25931, 25931, 20896, 20896]], device=torch.cuda.current_device())
+    labels = torch.nn.functional.pad(labels, (0, 2040), value=-100)
 
     output_tensor = model(tokens, position_ids, attention_mask)
 
