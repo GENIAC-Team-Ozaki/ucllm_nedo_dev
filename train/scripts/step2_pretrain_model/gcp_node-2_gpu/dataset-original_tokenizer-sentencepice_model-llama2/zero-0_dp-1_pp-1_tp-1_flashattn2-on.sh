@@ -149,21 +149,32 @@ seq_len=2048
 # min_lr=1.0e-6
 # init_std=0.005
 
-## LLama2
-model_size=7
-num_layers=32
-hidden_size=4096
-ffn_hidden_size=11008
-num_attn_heads=32
+## LLama2 7B
+# model_size=7
+# num_layers=32
+# hidden_size=4096
+# ffn_hidden_size=11008
+# num_attn_heads=32
+# global_batch_size=1024
+# lr=3e-4
+# min_lr=3e-5
+# init_std=0.009
+
+## LLama2 13B
+model_size=12
+num_layers=40
+hidden_size=5120
+ffn_hidden_size=13824
+num_attn_heads=40
 global_batch_size=1024
-lr=3e-4
-min_lr=3e-5
-init_std=0.009
+lr=1e-4
+min_lr=1e-5
+init_std=0.008
 
 ###############################################################################
 ### Training duration configs
 ## The main termination condition, original GPT-3 paper trains for 300B tokens.
-train_tokens_in_billion=300
+train_tokens_in_billion=200
 train_tokens=$((${train_tokens_in_billion} * 1000 * 1000 * 1000))
 
 ## train_samples is another termination condition and also affect the number of 
@@ -171,7 +182,8 @@ train_tokens=$((${train_tokens_in_billion} * 1000 * 1000 * 1000))
 ## above, and data efficiency techniques may change num tokens in some samples,
 ## so we just set this config large enough to make sure we have enough
 ## processed data and don't terminate by train_samples.
-train_samples=$(( 300 * 1000 * 1000 * 1000 * 2 / ${seq_len} ))
+#train_samples=$(( 60 * 1000 * 1000 * 1000 * 2 / ${seq_len} ))
+train_samples=30000000
 
 ## Another wall-clock time termination condition in minutes. Set it large
 ## enough to avoid undesired early termination.
@@ -201,7 +213,7 @@ mp_size=1
 ## Pipeline parallelism. To disable PP, set pp_size to 1 and no_pp to true.
 ## Note that currently both curriculum learning and random-LTD are NOT
 ## compatible with pipeline parallelism.
-pp_size=1
+pp_size=3
 
 # If you plan to use Megatron-DeepSpeed's deepspeed_to_transformers.py to convert
 # the checkpoint from Megatron-DeepSpeed format to Hugging Face Transformers format,
@@ -227,7 +239,7 @@ dp_size=$(( ${num_gpus} / ${pp_size} / ${mp_size} ))
 ## Make sure that batch_size <= global_batch_size*pp_size*mp_size/num_gpus
 ## Reduce it manually if GPU OOM
 #batch_size=$(( ${global_batch_size} / ${dp_size} ))
-batch_size=1
+batch_size=2
 ###############################################################################
 ### Misc configs
 log_interval=10
@@ -348,7 +360,7 @@ megatron_options=" \
     --swiglu \
     --normalization rmsnorm \
     --disable-bias-linear \
-    --num-key-value-heads 4 \
+    --num-key-value-heads 10 \
     --seed ${seed} \
     --load ${checkpoint_path} \
     --save ${checkpoint_path} \

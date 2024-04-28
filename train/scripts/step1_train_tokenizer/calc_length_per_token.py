@@ -38,7 +38,7 @@ def inspect_tokenization(sp, text_path, max_lines=None):
                 break
             tokens = sp.encode_as_pieces(line)
             length_per_token = calculate_length_per_token(line, tokens)
-            if length_per_token < 1.5 and len(line) > 5:
+            if length_per_token < 1.5 and len(line) > 5 and not any(s.isdigit() for s in line):
                 print(line)
                 print(tokens)
 
@@ -59,7 +59,7 @@ def main():
     print(f'Original Length: {len(original_text)} characters')
     print(f'Tokenized Length: {len(tokens)} tokens')
     print(f'length_per_token: {length_per_token:.2f}')
-    #print(original_text)
+    # #print(original_text)
     #print(tokens)
     
 if __name__ == "__main__":
