@@ -58,14 +58,14 @@ seq_len=2048
 ## provide better zero-shot eval results.
 
 ## GPT-3 Small 125M
-model_size=0.125
-num_layers=12
-hidden_size=768
-num_attn_heads=12
-global_batch_size=256
-lr=6.0e-4
-min_lr=1.0e-6
-init_std=0.02
+# model_size=0.125
+# num_layers=12
+# hidden_size=768
+# num_attn_heads=12
+# global_batch_size=256
+# lr=6.0e-4
+# min_lr=1.0e-6
+# init_std=0.02
 
 ## GPT-3 Medium 350M
 # model_size=0.35
@@ -136,6 +136,18 @@ init_std=0.02
 # lr=0.6e-4
 # min_lr=1.0e-6
 # init_std=0.005
+
+## LLama2 13B
+model_size=11
+num_layers=40
+hidden_size=5120
+ffn_hidden_size=13824
+num_attn_heads=40
+global_batch_size=16
+lr=1e-4
+min_lr=1e-5
+init_std=0.008
+
 ###############################################################################
 ### Training duration configs
 ## The main termination condition, original GPT-3 paper trains for 300B tokens.
@@ -307,7 +319,7 @@ megatron_options=" \
     --disable-bias-linear \
     --num-key-value-heads 4 \
     --seed ${seed} \
-    --load /persistentshare/storage/team_ozaki/personal/shioya/megatron_checkpoint/gpt_0.125B_tok2B_ja_wiki_train_0_14_lr6.0e-4_min1.0e-6_w20M_d2B_cosine_gbs256_mbs4_g_pp1_seed1234_rebase_llama2_except_for_kv_head/ \
+    --load /storage1/output/step2_pretrain_model/checkpoint/llama2_11B_tok200B_tengentoppa_corpus_1_lr1e-4_min1e-5_w3000M_d200B_cosine_gbs1022_mbs2_g21_z1_pp3_seed1234_rebase/global_step16000 \
     --save ${checkpoint_path} \
     --no-async-tensor-model-parallel-allreduce \
     --use-flash-attn-v2 \
@@ -371,7 +383,7 @@ if [[ $iteration -gt 0 ]]; then
     ds_ssh "echo $iteration_2 > $iteration_file_2"
 fi
 
-deepspeed ~/tmp_scripts/test_forward_megatron_ds.py \
+deepspeed ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/test_forward_megatron_ds.py \
     ${megatron_options} \
     ${data_options} \
     ${deepspeed_options} \
