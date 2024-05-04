@@ -1,5 +1,25 @@
 #!/bin/bash
 
+#SBATCH --partition=a3
+#SBATCH --time=14-00:00:00
+#SBATCH --nodes=3
+#SBATCH --nodelist=slurm0-a3-ghpc-[0-2]
+#SBATCH --cpus-per-gpu=12
+#SBATCH --job-name=pretrain
+#SBATCH --output=/storage1/batch_log/prod_llama2.out
+#SBATCH --error=/storage1/batch_log/prod_llama2.err
+#SBATCH --gpus-per-node=7
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate .venv_train
+
+cd ~/ucllm_nedo_dev/train/scripts/common/
+bash ./create_ssh_config_file_for_gcp_play_multi_node_multi_gpu.sh
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+cd ~/ucllm_nedo_dev/train/scripts/step2_pretrain_model/
+wandb login
+
 set -e
 echo ""
 
@@ -288,7 +308,7 @@ echo ""
 input_data_name=$(basename "${input_data_path}")
 
 prescale_grad="true"
-jobname="gpt_${model_size}B_tok${train_tokens_in_billion}B_${input_data_name}"
+jobname="llama2_${model_size}B_tok${train_tokens_in_billion}B_${input_data_name}"
 jobname="${jobname}_lr${lr}_min${min_lr}_w${lr_warmup_tokens_in_million}M_d${lr_decay_tokens_in_billion}B_${lr_decay_style}"
 jobname="${jobname}_gbs${global_batch_size}_mbs${batch_size}_g${num_gpus}"
 if [[ $zero_stage -gt 0 ]]; then
@@ -436,8 +456,12 @@ wandb_options=" \
     --wandb_project ${wandb_project} \
     --wandb_group pretrain_gpt_${model_size}B_${host}_${current_time}"
 
+# Sets the master port number to a unique number.
+master_port=$((10000 + (${SLURM_JOB_ID} % 50000)))
+
 # Creates a hostfile.
-script_dir=$(dirname "$0")
+#script_dir=$(dirname "$0")
+script_dir="${ucllm_nedo_dev_train_dir}/scripts/step2_pretrain_model/gcp_node-2_gpu/dataset-original_tokenizer-sentencepice_model-llama2/"
 hostfile="${script_dir}/hostfile_jobid-${SLURM_JOB_ID}"
 nodes=$(scontrol show hostnames $SLURM_JOB_NODELIST)
 
@@ -454,7 +478,7 @@ echo "hostfile = ${hostfile}"
 cat ${hostfile}
 echo ""
 
-deepspeed --hostfile ${hostfile} \
+deepspeed --master_port ${master_port} --hostfile ${hostfile} \
     ${megatron_deepspeed_dir}/pretrain_gpt.py \
     ${megatron_options} \
     ${data_options} \
