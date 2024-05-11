@@ -13,6 +13,7 @@ echo ""
 # Initializes the arguments.
 input_model_name_or_path=""
 input_max_seq_length=""
+dataset_file=""
 output_tokenizer_and_model_dir=""
 wandb_entity=""
 wandb_project=""
@@ -24,6 +25,7 @@ while [[ ${#} -gt 0 ]]; do
         # Shifts twice for option that takes an argument.
         --input_model_name_or_path) input_model_name_or_path=${2}; shift ;;
         --input_max_seq_length) input_max_seq_length=${2}; shift ;;
+        --dataset_file) dataset_file=${2}; shift ;;
         --output_tokenizer_and_model_dir) output_tokenizer_and_model_dir=${2}; shift ;;
         --wandb_entity) wandb_entity=${2}; shift ;;
         --wandb_project) wandb_project=${2}; shift ;;
@@ -35,15 +37,16 @@ while [[ ${#} -gt 0 ]]; do
 done
 
 # Checks the required arguments.
-if [[ -z ${input_model_name_or_path} ]] || [[ -z ${input_max_seq_length} ]] || [[ -z ${output_tokenizer_and_model_dir} ]] || [[ -z ${wandb_entity} ]] || [[ -z ${wandb_project} ]]; then
+if [[ -z ${input_model_name_or_path} ]] || [[ -z ${input_max_seq_length} ]] || [[ -z ${dataset_file} ]] || [[ -z ${output_tokenizer_and_model_dir} ]] || [[ -z ${wandb_entity} ]] || [[ -z ${wandb_project} ]]; then
     echo "Error: Missing required arguments."
-    echo "Usage: ${0} --input_model_name_or_path <input_model_name_or_path> --input_max_seq_length <input_max_seq_length> --output_tokenizer_and_model_dir <output_tokenizer_and_model_dir> --wandb_entity <wandb_entity> --wandb_project <wandb_project>"
+    echo "Usage: ${0} --input_model_name_or_path <input_model_name_or_path> --input_max_seq_length <input_max_seq_length> --dataset_file <dataset_file> --output_tokenizer_and_model_dir <output_tokenizer_and_model_dir> --wandb_entity <wandb_entity> --wandb_project <wandb_project>"
     exit 1
 fi
 
 # Prints the arguments.
 echo "input_model_name_or_path = ${input_model_name_or_path}"
 echo "input_max_seq_length = ${input_max_seq_length}"
+echo "dataset_file = ${dataset_file}"
 echo "output_tokenizer_and_model_dir = ${output_tokenizer_and_model_dir}"
 echo "wandb_entity = ${wandb_entity}"
 echo "wandb_project = ${wandb_project}"
@@ -54,15 +57,15 @@ mkdir -p ${output_tokenizer_and_model_dir}
 
 # If openassistant_best_replies_train.jsonl doesn't exist yet,
 # then downloads openassistant_best_replies_train.jsonl.
-dataset_file=${ucllm_nedo_dev_train_dir}/llm-jp-sft/dataset/openassistant_best_replies_train.jsonl
-if [ ! -f ${dataset_file} ]; then
-    echo "${dataset_file} doesn't exist yet, so download arxiv.jsonl and preprocess the data."
-    wget https://huggingface.co/datasets/timdettmers/openassistant-guanaco/resolve/main/openassistant_best_replies_train.jsonl \
-        --directory-prefix ${ucllm_nedo_dev_train_dir}/llm-jp-sft/dataset/
-else
-    echo "${dataset_file} already exists."
-fi
-echo ""
+# dataset_file=${ucllm_nedo_dev_train_dir}/llm-jp-sft/dataset/openassistant_best_replies_train.jsonl
+# if [ ! -f ${dataset_file} ]; then
+#     echo "${dataset_file} doesn't exist yet, so download arxiv.jsonl and preprocess the data."
+#     wget https://huggingface.co/datasets/timdettmers/openassistant-guanaco/resolve/main/openassistant_best_replies_train.jsonl \
+#         --directory-prefix ${ucllm_nedo_dev_train_dir}/llm-jp-sft/dataset/
+# else
+#     echo "${dataset_file} already exists."
+# fi
+# echo ""
 
 # Logging.
 log_path="${output_tokenizer_and_model_dir}/log"
@@ -89,7 +92,7 @@ wandb_options="${wandb_options} \
 fi
 
 # Finetunes the pretrained model.
-python ${ucllm_nedo_dev_train_dir}/llm-jp-sft/train.py \
+python ${ucllm_nedo_dev_train_dir}/scripts/step4_finetune_model/sft_train.py \
     --num_train_epochs 1 \
     --per_device_train_batch_size 1 \
     --learning_rate 1e-5 \
@@ -104,8 +107,7 @@ python ${ucllm_nedo_dev_train_dir}/llm-jp-sft/train.py \
     --use_peft True \
     --use_flash_attention_2 True \
     --peft_target_model "llama-all" \
-    --instruction_template "### Human:" \
-    --response_template "### Assistant:" \
+    --response_template "### 応答:" \
     ${wandb_options} \
     2>&1 | tee ${log_path}/${host}_${current_time}.log
 
