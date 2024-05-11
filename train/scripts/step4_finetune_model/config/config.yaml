@@ -1,0 +1,16 @@
+datasets:
+  - name: GENIAC-Team-Ozaki/chatbot-arena-ja-calm2-7b-chat-experimental_deduped
+    instruction: prompt
+    input: null
+    output: chosen
+    split: train
+  - name: GENIAC-Team-Ozaki/WikiHowNFQA-ja_cleaned
+    instruction: question
+    input: null
+    output: answer
+    split: train
+  - name: HachiML/Hachi-Alpaca
+    instruction: instruction
+    input: input
+    output: output
+    split: v1.0_cleaned

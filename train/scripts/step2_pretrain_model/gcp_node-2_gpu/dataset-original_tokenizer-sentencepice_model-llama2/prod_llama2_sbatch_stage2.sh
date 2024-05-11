@@ -203,7 +203,9 @@ train_tokens=$((${train_tokens_in_billion} * 1000 * 1000 * 1000))
 ## so we just set this config large enough to make sure we have enough
 ## processed data and don't terminate by train_samples.
 #train_samples=$(( 60 * 1000 * 1000 * 1000 * 2 / ${seq_len} ))
-train_samples=37400000
+#train_samples=32800000
+#train_samples=68000000
+train_samples=100000000
 
 ## Another wall-clock time termination condition in minutes. Set it large
 ## enough to avoid undesired early termination.
@@ -265,7 +267,7 @@ batch_size=2
 ### Misc configs
 log_interval=10
 eval_iters=10
-eval_interval=100
+eval_interval=400
 # num_save controls how frequent to save checkpoint. num_save=20 means that a
 # checkpoint will be saved every 5% of training. For longer training you would
 # want larger num_save to save more frequently, and vice versa.

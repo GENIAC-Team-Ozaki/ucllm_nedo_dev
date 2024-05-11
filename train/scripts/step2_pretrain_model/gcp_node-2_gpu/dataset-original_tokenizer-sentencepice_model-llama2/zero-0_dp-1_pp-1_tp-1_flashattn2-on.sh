@@ -288,7 +288,7 @@ echo ""
 input_data_name=$(basename "${input_data_path}")
 
 prescale_grad="true"
-jobname="gpt_${model_size}B_tok${train_tokens_in_billion}B_${input_data_name}"
+jobname="sample_test_gpt_${model_size}B_tok${train_tokens_in_billion}B_${input_data_name}"
 jobname="${jobname}_lr${lr}_min${min_lr}_w${lr_warmup_tokens_in_million}M_d${lr_decay_tokens_in_billion}B_${lr_decay_style}"
 jobname="${jobname}_gbs${global_batch_size}_mbs${batch_size}_g${num_gpus}"
 if [[ $zero_stage -gt 0 ]]; then
