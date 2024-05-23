@@ -110,7 +110,8 @@ def load_datasets(data_files):
         
         def create_propmt(example): 
             prompt = f"以下は、タスクを説明する指示と、文脈のある入力の組み合わせです。要求を適切に満たす応答を書きなさい。\n\n### 指示:\n{example[data_file['instruction']]}"
-            if data_file['input'] is not None:
+            if example[data_file['input']] is not None:
+            #if data_file['input'] in example and len(example[data_file['input']]) > 0: 
                 prompt += f"\n\n### 入力:\n{example[data_file['input']]}"
             prompt += f"\n\n### 応答:\n{example[data_file['output']]}"
             return prompt
@@ -118,7 +119,7 @@ def load_datasets(data_files):
         dataset = dataset.map(lambda example: {"text": create_propmt(example)})
         dataset = dataset.select_columns("text")
         logger.info(f"{data_file['name']}: {len(dataset)} records")
-        logger.info(f"example: {dataset[0]}")
+        logger.info(f"example: {dataset[:5]}")
         datasets.append(dataset)
     return concatenate_datasets(datasets)
 

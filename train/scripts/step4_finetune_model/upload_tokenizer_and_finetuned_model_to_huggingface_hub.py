@@ -27,13 +27,13 @@ def load_tokenizer_and_model(input_tokenizer_and_model_dir: str):
             peft_config.base_model_name_or_path,
             return_dict=True,
             device_map="auto",
-            torch_dtype=torch.float16,
+            torch_dtype=torch.bfloat16,
         )
         model = PeftModel.from_pretrained(model, input_tokenizer_and_model_dir)
         model = model.merge_and_unload()
         print('adapter merged')
     else:    
-        model = AutoModelForCausalLM.from_pretrained(input_tokenizer_and_model_dir, device_map="auto", torch_dtype=torch.float16)
+        model = AutoModelForCausalLM.from_pretrained(input_tokenizer_and_model_dir, device_map="auto", torch_dtype=torch.bfloat16)
     # 各パラメータのデータ型を出力
     for name, param in model.named_parameters():
         print(f"{name}: {param.dtype}")

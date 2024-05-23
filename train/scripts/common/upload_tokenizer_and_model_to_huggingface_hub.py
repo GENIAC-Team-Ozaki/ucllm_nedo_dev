@@ -16,7 +16,7 @@ def parse_arguments():
 
 
 def load_tokenizer_and_model(input_tokenizer_and_model_dir: str):
-    tokenizer = AutoTokenizer.from_pretrained(input_tokenizer_and_model_dir)
+    tokenizer = AutoTokenizer.from_pretrained(input_tokenizer_and_model_dir, use_fast=False)
     model = AutoModelForCausalLM.from_pretrained(input_tokenizer_and_model_dir, device_map="auto", torch_dtype=torch.float16)
     # 各パラメータのデータ型を出力
     for name, param in model.named_parameters():

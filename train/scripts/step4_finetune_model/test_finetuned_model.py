@@ -16,14 +16,14 @@ def parse_arguments():
 
 def load_tokenizer_and_model(input_tokenizer_and_model_dir: str):
     tokenizer = AutoTokenizer.from_pretrained(input_tokenizer_and_model_dir, use_fast=False)
-    model = AutoModelForCausalLM.from_pretrained(input_tokenizer_and_model_dir, device_map="auto", torch_dtype=torch.float16)
+    model = AutoModelForCausalLM.from_pretrained(input_tokenizer_and_model_dir, device_map="auto", torch_dtype=torch.bfloat16)
     return tokenizer, model
 
 
 def test_tokenizer_and_model(tokenizer, model, prompt_text: str) -> str:
     encoded_prompt_text = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt").to(model.device)
     with torch.no_grad():
-        encoded_generation_text = model.generate(encoded_prompt_text, max_new_tokens=100)[0]
+        encoded_generation_text = model.generate(encoded_prompt_text, max_new_tokens=256)[0]
     decoded_generation_text = tokenizer.decode(encoded_generation_text)
     return decoded_generation_text
 
